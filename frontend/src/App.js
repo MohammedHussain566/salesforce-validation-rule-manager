@@ -13,6 +13,13 @@ function App() {
   const [loading, setLoading] = useState(false);
 
   // =====================================
+  // BACKEND URL
+  // =====================================
+
+  const API_BASE_URL =
+    "https://salesforce-validation-rule-manager-79go.onrender.com";
+
+  // =====================================
   // LOAD TOKEN AFTER LOGIN
   // =====================================
 
@@ -86,6 +93,10 @@ function App() {
     const clientId =
       "3MVG9dAEux2v1sLsBAqkbUBkTuyc8dTD1KguW66DnrDTssaDv4XfnUCKOsDImKXjEao7fD1qh_.KnAAhBmwfG";
 
+    // =====================================
+    // CHANGE THIS AFTER VERCEL DEPLOYMENT
+    // =====================================
+
     const redirectUri =
       "http://localhost:3000";
 
@@ -111,7 +122,7 @@ function App() {
       setLoading(true);
 
       const response = await axios.post(
-        "http://localhost:5000/get-rules",
+        `${API_BASE_URL}/get-rules`,
         {
           accessToken: token,
           instanceUrl: instanceUrl
@@ -192,7 +203,7 @@ function App() {
       // =====================================
 
       const response = await axios.post(
-        "http://localhost:5000/toggle-rule",
+        `${API_BASE_URL}/toggle-rule`,
         {
           accessToken: token,
           instanceUrl: instanceUrl,
