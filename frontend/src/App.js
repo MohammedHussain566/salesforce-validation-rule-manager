@@ -63,6 +63,14 @@ function App() {
         );
       }
 
+      // REMOVE HASH FROM URL
+
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname
+      );
+
     } else {
 
       // RESTORE FROM LOCAL STORAGE
@@ -94,11 +102,11 @@ function App() {
       "3MVG9dAEux2v1sLsBAqkbUBkTuyc8dTD1KguW66DnrDTssaDv4XfnUCKOsDImKXjEao7fD1qh_.KnAAhBmwfG";
 
     // =====================================
-    // CHANGE THIS AFTER VERCEL DEPLOYMENT
+    // YOUR VERCEL FRONTEND URL
     // =====================================
 
     const redirectUri =
-      "http://localhost:3000";
+      "https://salesforce-validation-rule-manager-hp6qh63xr.vercel.app";
 
     const authUrl =
       `https://login.salesforce.com/services/oauth2/authorize` +
@@ -220,7 +228,11 @@ function App() {
       if (response.data.success) {
 
         alert(
-          "Validation Rule Updated ✅"
+          `Validation Rule ${
+            !currentState
+              ? "Enabled ✅"
+              : "Disabled ❌"
+          }`
         );
 
       } else {
@@ -239,6 +251,106 @@ function App() {
 
       alert(
         "Error updating validation rule"
+      );
+
+    } finally {
+
+      setLoading(false);
+    }
+  };
+
+  // =====================================
+  // ENABLE ALL RULES
+  // =====================================
+
+  const enableAllRules = async () => {
+
+    try {
+
+      setLoading(true);
+
+      const updatedRules = rules.map(
+        (rule) => ({
+          ...rule,
+          Active: true
+        })
+      );
+
+      setRules(updatedRules);
+
+      for (const rule of rules) {
+
+        await axios.post(
+          `${API_BASE_URL}/toggle-rule`,
+          {
+            accessToken: token,
+            instanceUrl: instanceUrl,
+            ruleId: rule.Id,
+            active: true
+          }
+        );
+      }
+
+      alert(
+        "All Validation Rules Enabled ✅"
+      );
+
+    } catch (error) {
+
+      console.log(error);
+
+      alert(
+        "Error enabling all rules"
+      );
+
+    } finally {
+
+      setLoading(false);
+    }
+  };
+
+  // =====================================
+  // DISABLE ALL RULES
+  // =====================================
+
+  const disableAllRules = async () => {
+
+    try {
+
+      setLoading(true);
+
+      const updatedRules = rules.map(
+        (rule) => ({
+          ...rule,
+          Active: false
+        })
+      );
+
+      setRules(updatedRules);
+
+      for (const rule of rules) {
+
+        await axios.post(
+          `${API_BASE_URL}/toggle-rule`,
+          {
+            accessToken: token,
+            instanceUrl: instanceUrl,
+            ruleId: rule.Id,
+            active: false
+          }
+        );
+      }
+
+      alert(
+        "All Validation Rules Disabled ❌"
+      );
+
+    } catch (error) {
+
+      console.log(error);
+
+      alert(
+        "Error disabling all rules"
       );
 
     } finally {
@@ -356,6 +468,36 @@ function App() {
           </button>
 
           <button
+            onClick={enableAllRules}
+            style={{
+              padding: "10px 20px",
+              cursor: "pointer",
+              borderRadius: "6px",
+              border: "none",
+              backgroundColor: "#2e844a",
+              color: "white",
+              marginRight: "10px"
+            }}
+          >
+            Enable All
+          </button>
+
+          <button
+            onClick={disableAllRules}
+            style={{
+              padding: "10px 20px",
+              cursor: "pointer",
+              borderRadius: "6px",
+              border: "none",
+              backgroundColor: "#ba0517",
+              color: "white",
+              marginRight: "10px"
+            }}
+          >
+            Disable All
+          </button>
+
+          <button
             onClick={deployChanges}
             style={{
               padding: "10px 20px",
@@ -377,7 +519,7 @@ function App() {
               cursor: "pointer",
               borderRadius: "6px",
               border: "none",
-              backgroundColor: "#ba0517",
+              backgroundColor: "#706e6b",
               color: "white"
             }}
           >
