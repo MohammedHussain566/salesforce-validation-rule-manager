@@ -35,13 +35,7 @@ app.post("/get-rules", async (req, res) => {
       instanceUrl
     } = req.body;
 
-    if (!accessToken || !instanceUrl) {
-
-      return res.status(400).json({
-        success: false,
-        message: "Missing Token"
-      });
-    }
+    // SALESFORCE CONNECTION
 
     const conn =
       new jsforce.Connection({
@@ -49,12 +43,15 @@ app.post("/get-rules", async (req, res) => {
         accessToken
       });
 
+    // FETCH RULES
+
     const result =
       await conn.tooling.query(`
         SELECT
           Id,
           ValidationName,
-          Active
+          Active,
+          EntityDefinitionId
         FROM ValidationRule
       `);
 
@@ -67,7 +64,7 @@ app.post("/get-rules", async (req, res) => {
 
     console.log(
       "GET RULES ERROR:",
-      error.message
+      error
     );
 
     res.status(500).json({
@@ -92,39 +89,141 @@ app.post("/toggle-rule", async (req, res) => {
       active
     } = req.body;
 
+    // SALESFORCE CONNECTION
+
     const conn =
       new jsforce.Connection({
         instanceUrl,
         accessToken
       });
 
-    await conn.tooling
-      .sobject("ValidationRule")
-      .update({
-        Id: ruleId,
-        Active: active
-      });
+    // =====================================
+    // GET VALIDATION RULE
+    // =====================================
+
+    const rule =
+      await conn.tooling
+        .sobject("ValidationRule")
+        .retrieve(ruleId);
+
+    console.log(
+      "RULE:",
+      rule
+    );
+
+    // =====================================
+    // GET OBJECT DETAILS
+    // =====================================
+
+    const entity =
+      await conn.tooling
+        .sobject("EntityDefinition")
+        .retrieve(
+          rule.EntityDefinitionId
+        );
+
+    console.log(
+      "ENTITY:",
+      entity
+    );
+
+    // =====================================
+    // BUILD FULL NAME
+    // =====================================
+
+    const fullName =
+      `${entity.QualifiedApiName}.${rule.ValidationName}`;
+
+    console.log(
+      "FULL NAME:",
+      fullName
+    );
+
+    // =====================================
+    // READ METADATA
+    // =====================================
+
+    const metadata =
+      await conn.metadata.read(
+        "ValidationRule",
+        fullName
+      );
+
+    console.log(
+      "METADATA:",
+      metadata
+    );
+
+    // =====================================
+    // UPDATED METADATA
+    // =====================================
+
+    const updatedMetadata = {
+
+      fullName:
+        metadata.fullName,
+
+      active:
+        active,
+
+      description:
+        metadata.description || "",
+
+      errorConditionFormula:
+        metadata.errorConditionFormula,
+
+      errorMessage:
+        metadata.errorMessage
+
+    };
+
+    console.log(
+      "UPDATED METADATA:",
+      updatedMetadata
+    );
+
+    // =====================================
+    // UPDATE VALIDATION RULE
+    // =====================================
+
+    const updateResult =
+      await conn.metadata.update(
+        "ValidationRule",
+        updatedMetadata
+      );
+
+    console.log(
+      "UPDATE RESULT:",
+      updateResult
+    );
+
+    // =====================================
+    // SUCCESS
+    // =====================================
 
     res.json({
-      success: true
+      success: true,
+      result: updateResult
     });
 
   } catch (error) {
 
     console.log(
-      "TOGGLE ERROR:",
-      error.message
+      "TOGGLE ERROR:"
     );
+
+    console.log(error);
 
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
+      details: error
     });
   }
 });
 
 // =====================================
-// PORT
+// SERVER
 // =====================================
 
 const PORT =
