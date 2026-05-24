@@ -94,28 +94,65 @@ app.post("/toggle-rule", async (req, res) => {
       });
 
     // =====================================
-    // UPDATE VALIDATION RULE
+    // GET RULE DETAILS
+    // =====================================
+
+    const ruleResult =
+      await conn.tooling.query(`
+        SELECT
+          Id,
+          ValidationName,
+          EntityDefinition.QualifiedApiName
+        FROM ValidationRule
+        WHERE Id = '${ruleId}'
+      `);
+
+    const rule =
+      ruleResult.records[0];
+
+    console.log("RULE:");
+    console.log(rule);
+
+    // =====================================
+    // BUILD FULL NAME
+    // =====================================
+
+    const fullName =
+      `${rule.EntityDefinition.QualifiedApiName}.${rule.ValidationName}`;
+
+    console.log("FULL NAME:", fullName);
+
+    // =====================================
+    // READ FULL METADATA
+    // =====================================
+
+    const metadata =
+      await conn.metadata.read(
+        "ValidationRule",
+        fullName
+      );
+
+    console.log("METADATA:");
+    console.log(metadata);
+
+    // =====================================
+    // UPDATE ACTIVE STATUS
+    // =====================================
+
+    metadata.active = active;
+
+    // =====================================
+    // UPDATE METADATA
     // =====================================
 
     const updateResult =
-      await conn.tooling
-        .sobject("ValidationRule")
-        .update({
-          Id: ruleId,
-          Active: active
-        });
+      await conn.metadata.update(
+        "ValidationRule",
+        metadata
+      );
 
     console.log("UPDATE RESULT:");
     console.log(updateResult);
-
-    if (updateResult.success === false) {
-
-      return res.status(500).json({
-        success: false,
-        message: updateResult.errors
-      });
-
-    }
 
     res.json({
       success: true,
