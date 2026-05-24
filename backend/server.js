@@ -83,6 +83,9 @@ app.post("/toggle-rule", async (req, res) => {
       active
     } = req.body;
 
+    console.log("RULE ID:", ruleId);
+    console.log("ACTIVE:", active);
+
     const conn =
       new jsforce.Connection({
         instanceUrl,
@@ -91,30 +94,28 @@ app.post("/toggle-rule", async (req, res) => {
       });
 
     // =====================================
-    // UPDATE USING TOOLING API
+    // UPDATE VALIDATION RULE
     // =====================================
 
     const updateResult =
-      await conn.request({
-
-        method: "PATCH",
-
-        url:
-          `${instanceUrl}/services/data/v59.0/tooling/sobjects/ValidationRule/${ruleId}`,
-
-        body: {
+      await conn.tooling
+        .sobject("ValidationRule")
+        .update({
+          Id: ruleId,
           Active: active
-        },
-
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json"
-        }
-
-      });
+        });
 
     console.log("UPDATE RESULT:");
     console.log(updateResult);
+
+    if (updateResult.success === false) {
+
+      return res.status(500).json({
+        success: false,
+        message: updateResult.errors
+      });
+
+    }
 
     res.json({
       success: true,
@@ -128,7 +129,8 @@ app.post("/toggle-rule", async (req, res) => {
 
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
+      details: error
     });
   }
 });
