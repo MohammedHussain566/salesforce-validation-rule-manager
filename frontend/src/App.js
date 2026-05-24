@@ -20,6 +20,45 @@ function App() {
     "https://salesforce-validation-rule-manager-79go.onrender.com";
 
   // =====================================
+  // CUSTOM POPUP
+  // =====================================
+
+  const showPopup = (message, color) => {
+
+    const oldPopup =
+      document.getElementById("popup");
+
+    if (oldPopup) {
+      oldPopup.remove();
+    }
+
+    const popup =
+      document.createElement("div");
+
+    popup.id = "popup";
+
+    popup.innerText = message;
+
+    popup.style.position = "fixed";
+    popup.style.top = "20px";
+    popup.style.right = "20px";
+    popup.style.background = color;
+    popup.style.color = "white";
+    popup.style.padding = "14px 20px";
+    popup.style.borderRadius = "10px";
+    popup.style.fontWeight = "bold";
+    popup.style.zIndex = "9999";
+    popup.style.boxShadow =
+      "0 2px 10px rgba(0,0,0,0.2)";
+
+    document.body.appendChild(popup);
+
+    setTimeout(() => {
+      popup.remove();
+    }, 2000);
+  };
+
+  // =====================================
   // LOAD TOKEN AFTER LOGIN
   // =====================================
 
@@ -29,17 +68,16 @@ function App() {
 
     if (hash) {
 
-      const params = new URLSearchParams(
-        hash.substring(1)
-      );
+      const params =
+        new URLSearchParams(
+          hash.substring(1)
+        );
 
       const accessToken =
         params.get("access_token");
 
       const instance =
         params.get("instance_url");
-
-      // SAVE TOKEN
 
       if (accessToken) {
 
@@ -50,8 +88,6 @@ function App() {
           accessToken
         );
       }
-
-      // SAVE INSTANCE URL
 
       if (instance) {
 
@@ -72,8 +108,6 @@ function App() {
       );
 
     } else {
-
-      // RESTORE FROM LOCAL STORAGE
 
       const savedToken =
         localStorage.getItem("sf_token");
@@ -101,10 +135,6 @@ function App() {
     const clientId =
       "3MVG9dAEux2v1sLsBAqkbUBkTuyc8dTD1KguW66DnrDTssaDv4XfnUCKOsDImKXjEao7fD1qh_.KnAAhBmwfG";
 
-    // =====================================
-    // YOUR VERCEL FRONTEND URL
-    // =====================================
-
     const redirectUri =
       "https://salesforce-validation-rule-manager-hp6qh63xr.vercel.app";
 
@@ -120,10 +150,20 @@ function App() {
   };
 
   // =====================================
-  // FETCH VALIDATION RULES
+  // FETCH RULES
   // =====================================
 
   const fetchValidationRules = async () => {
+
+    if (!token || !instanceUrl) {
+
+      showPopup(
+        "Please Login Again ❌",
+        "#ba0517"
+      );
+
+      return;
+    }
 
     try {
 
@@ -137,33 +177,31 @@ function App() {
         }
       );
 
-      console.log(
-        "RULES RESPONSE:",
-        response.data
-      );
-
       if (response.data.success) {
 
         setRules(response.data.records);
 
+        showPopup(
+          "Rules Loaded ✅",
+          "#2e844a"
+        );
+
       } else {
 
-        alert(
-          "Failed to fetch validation rules"
+        showPopup(
+          "Failed ❌",
+          "#ba0517"
         );
       }
 
     } catch (error) {
 
-      console.log(
-        "FETCH ERROR:",
-        error
-      );
+      console.log(error);
 
-      alert(
-        "Error fetching validation rules"
+      showPopup(
+        "Session Expired ❌",
+        "#ba0517"
       );
-
     } finally {
 
       setLoading(false);
@@ -171,7 +209,7 @@ function App() {
   };
 
   // =====================================
-  // TOGGLE VALIDATION RULE
+  // TOGGLE RULE
   // =====================================
 
   const toggleRule = async (
@@ -183,12 +221,10 @@ function App() {
 
       setLoading(true);
 
-      // =====================================
-      // UPDATE UI IMMEDIATELY
-      // =====================================
+      // UPDATE UI
 
-      const updatedRules = rules.map(
-        (rule) => {
+      const updatedRules =
+        rules.map((rule) => {
 
           if (rule.Id === ruleId) {
 
@@ -199,175 +235,49 @@ function App() {
           }
 
           return rule;
-        }
-      );
-
-      // UPDATE STATE
+        });
 
       setRules(updatedRules);
 
-      // =====================================
-      // SEND UPDATE TO BACKEND
-      // =====================================
-
-      const response = await axios.post(
-        `${API_BASE_URL}/toggle-rule`,
-        {
-          accessToken: token,
-          instanceUrl: instanceUrl,
-          ruleId: ruleId,
-          active: !currentState
-        }
-      );
-
-      console.log(
-        "TOGGLE RESPONSE:",
-        response.data
-      );
+      const response =
+        await axios.post(
+          `${API_BASE_URL}/toggle-rule`,
+          {
+            accessToken: token,
+            instanceUrl: instanceUrl,
+            ruleId: ruleId,
+            active: !currentState
+          }
+        );
 
       if (response.data.success) {
 
-        alert(
-          `Validation Rule ${
-            !currentState
-              ? "Enabled ✅"
-              : "Disabled ❌"
-          }`
+        showPopup(
+          "Updated ✅",
+          "#2e844a"
         );
 
       } else {
 
-        alert(
-          "Failed to update validation rule"
+        showPopup(
+          "Update Failed ❌",
+          "#ba0517"
         );
       }
-
-    } catch (error) {
-
-      console.log(
-        "TOGGLE ERROR:",
-        error
-      );
-
-      alert(
-        "Error updating validation rule"
-      );
-
-    } finally {
-
-      setLoading(false);
-    }
-  };
-
-  // =====================================
-  // ENABLE ALL RULES
-  // =====================================
-
-  const enableAllRules = async () => {
-
-    try {
-
-      setLoading(true);
-
-      const updatedRules = rules.map(
-        (rule) => ({
-          ...rule,
-          Active: true
-        })
-      );
-
-      setRules(updatedRules);
-
-      for (const rule of rules) {
-
-        await axios.post(
-          `${API_BASE_URL}/toggle-rule`,
-          {
-            accessToken: token,
-            instanceUrl: instanceUrl,
-            ruleId: rule.Id,
-            active: true
-          }
-        );
-      }
-
-      alert(
-        "All Validation Rules Enabled ✅"
-      );
 
     } catch (error) {
 
       console.log(error);
 
-      alert(
-        "Error enabling all rules"
+      showPopup(
+        "Error ❌",
+        "#ba0517"
       );
 
     } finally {
 
       setLoading(false);
     }
-  };
-
-  // =====================================
-  // DISABLE ALL RULES
-  // =====================================
-
-  const disableAllRules = async () => {
-
-    try {
-
-      setLoading(true);
-
-      const updatedRules = rules.map(
-        (rule) => ({
-          ...rule,
-          Active: false
-        })
-      );
-
-      setRules(updatedRules);
-
-      for (const rule of rules) {
-
-        await axios.post(
-          `${API_BASE_URL}/toggle-rule`,
-          {
-            accessToken: token,
-            instanceUrl: instanceUrl,
-            ruleId: rule.Id,
-            active: false
-          }
-        );
-      }
-
-      alert(
-        "All Validation Rules Disabled ❌"
-      );
-
-    } catch (error) {
-
-      console.log(error);
-
-      alert(
-        "Error disabling all rules"
-      );
-
-    } finally {
-
-      setLoading(false);
-    }
-  };
-
-  // =====================================
-  // DEPLOY CHANGES
-  // =====================================
-
-  const deployChanges = () => {
-
-    alert(
-      "Changes successfully deployed to Salesforce ✅"
-    );
   };
 
   // =====================================
@@ -410,19 +320,17 @@ function App() {
         Salesforce Validation Rule Manager
       </h1>
 
-      {/* LOGIN */}
-
       {!token ? (
 
         <button
           onClick={loginToSalesforce}
           style={{
             padding: "12px 20px",
-            cursor: "pointer",
-            borderRadius: "6px",
             border: "none",
+            borderRadius: "6px",
             backgroundColor: "#0176d3",
             color: "white",
+            cursor: "pointer",
             fontSize: "16px"
           }}
         >
@@ -433,15 +341,9 @@ function App() {
 
         <div>
 
-          {/* LOGIN SUCCESS */}
-
           <h3>
             Login Successful ✅
           </h3>
-
-          <p>
-            Connected to:
-          </p>
 
           <strong>
             {instanceUrl}
@@ -450,77 +352,31 @@ function App() {
           <br />
           <br />
 
-          {/* TOP BUTTONS */}
-
           <button
             onClick={fetchValidationRules}
+            disabled={loading}
             style={{
               padding: "10px 20px",
-              cursor: "pointer",
-              borderRadius: "6px",
+              marginRight: "10px",
               border: "none",
+              borderRadius: "6px",
               backgroundColor: "#2e844a",
               color: "white",
-              marginRight: "10px"
+              cursor: "pointer"
             }}
           >
             Get Validation Rules
           </button>
 
           <button
-            onClick={enableAllRules}
-            style={{
-              padding: "10px 20px",
-              cursor: "pointer",
-              borderRadius: "6px",
-              border: "none",
-              backgroundColor: "#2e844a",
-              color: "white",
-              marginRight: "10px"
-            }}
-          >
-            Enable All
-          </button>
-
-          <button
-            onClick={disableAllRules}
-            style={{
-              padding: "10px 20px",
-              cursor: "pointer",
-              borderRadius: "6px",
-              border: "none",
-              backgroundColor: "#ba0517",
-              color: "white",
-              marginRight: "10px"
-            }}
-          >
-            Disable All
-          </button>
-
-          <button
-            onClick={deployChanges}
-            style={{
-              padding: "10px 20px",
-              cursor: "pointer",
-              borderRadius: "6px",
-              border: "none",
-              backgroundColor: "#0176d3",
-              color: "white",
-              marginRight: "10px"
-            }}
-          >
-            Deploy Changes
-          </button>
-
-          <button
             onClick={logout}
             style={{
               padding: "10px 20px",
-              cursor: "pointer",
-              borderRadius: "6px",
               border: "none",
-              backgroundColor: "#706e6b",
-              color: "white"
+              borderRadius: "6px",
+              backgroundColor: "#ba0517",
+              color: "white",
+              cursor: "pointer"
             }}
           >
             Logout
@@ -529,15 +385,9 @@ function App() {
           <br />
           <br />
 
-          {/* LOADING */}
-
           {loading && (
-            <p>
-              Loading...
-            </p>
+            <p>Loading...</p>
           )}
-
-          {/* VALIDATION RULES */}
 
           {rules.length > 0 && (
 
@@ -552,11 +402,10 @@ function App() {
                 <div
                   key={rule.Id}
                   style={{
-                    backgroundColor: "white",
-                    border: "1px solid #ddd",
-                    borderRadius: "10px",
+                    background: "white",
                     padding: "20px",
                     marginBottom: "15px",
+                    borderRadius: "10px",
                     boxShadow:
                       "0 2px 5px rgba(0,0,0,0.1)"
                   }}
@@ -573,8 +422,6 @@ function App() {
                       : " Inactive ❌"}
                   </p>
 
-                  {/* ENABLE / DISABLE BUTTON */}
-
                   <button
                     onClick={() =>
                       toggleRule(
@@ -584,14 +431,14 @@ function App() {
                     }
                     style={{
                       padding: "10px 18px",
-                      cursor: "pointer",
-                      borderRadius: "6px",
                       border: "none",
+                      borderRadius: "6px",
                       backgroundColor:
                         rule.Active
                           ? "#ba0517"
                           : "#2e844a",
-                      color: "white"
+                      color: "white",
+                      cursor: "pointer"
                     }}
                   >
                     {rule.Active
