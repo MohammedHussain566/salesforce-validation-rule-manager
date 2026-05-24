@@ -7,10 +7,17 @@ function App() {
   // STATES
   // =====================================
 
-  const [token, setToken] = useState("");
-  const [instanceUrl, setInstanceUrl] = useState("");
-  const [rules, setRules] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [token, setToken] =
+    useState("");
+
+  const [instanceUrl, setInstanceUrl] =
+    useState("");
+
+  const [rules, setRules] =
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(false);
 
   // =====================================
   // BACKEND URL
@@ -23,10 +30,15 @@ function App() {
   // CUSTOM POPUP
   // =====================================
 
-  const showPopup = (message, color) => {
+  const showPopup = (
+    message,
+    color
+  ) => {
 
     const oldPopup =
-      document.getElementById("popup");
+      document.getElementById(
+        "popup"
+      );
 
     if (oldPopup) {
       oldPopup.remove();
@@ -44,17 +56,26 @@ function App() {
     popup.style.right = "20px";
     popup.style.background = color;
     popup.style.color = "white";
-    popup.style.padding = "14px 20px";
-    popup.style.borderRadius = "10px";
-    popup.style.fontWeight = "bold";
+    popup.style.padding =
+      "14px 22px";
+    popup.style.borderRadius =
+      "10px";
+    popup.style.fontWeight =
+      "bold";
     popup.style.zIndex = "9999";
     popup.style.boxShadow =
       "0 2px 10px rgba(0,0,0,0.2)";
+    popup.style.transition =
+      "0.3s";
 
-    document.body.appendChild(popup);
+    document.body.appendChild(
+      popup
+    );
 
     setTimeout(() => {
+
       popup.remove();
+
     }, 2000);
   };
 
@@ -64,7 +85,8 @@ function App() {
 
   useEffect(() => {
 
-    const hash = window.location.hash;
+    const hash =
+      window.location.hash;
 
     if (hash) {
 
@@ -74,14 +96,20 @@ function App() {
         );
 
       const accessToken =
-        params.get("access_token");
+        params.get(
+          "access_token"
+        );
 
       const instance =
-        params.get("instance_url");
+        params.get(
+          "instance_url"
+        );
 
       if (accessToken) {
 
-        setToken(accessToken);
+        setToken(
+          accessToken
+        );
 
         localStorage.setItem(
           "sf_token",
@@ -91,7 +119,9 @@ function App() {
 
       if (instance) {
 
-        setInstanceUrl(instance);
+        setInstanceUrl(
+          instance
+        );
 
         localStorage.setItem(
           "sf_instance",
@@ -99,7 +129,7 @@ function App() {
         );
       }
 
-      // REMOVE HASH FROM URL
+      // REMOVE HASH
 
       window.history.replaceState(
         {},
@@ -110,24 +140,30 @@ function App() {
     } else {
 
       const savedToken =
-        localStorage.getItem("sf_token");
+        localStorage.getItem(
+          "sf_token"
+        );
 
       const savedInstance =
-        localStorage.getItem("sf_instance");
+        localStorage.getItem(
+          "sf_instance"
+        );
 
       if (savedToken) {
         setToken(savedToken);
       }
 
       if (savedInstance) {
-        setInstanceUrl(savedInstance);
+        setInstanceUrl(
+          savedInstance
+        );
       }
     }
 
   }, []);
 
   // =====================================
-  // LOGIN TO SALESFORCE
+  // LOGIN
   // =====================================
 
   const loginToSalesforce = () => {
@@ -146,67 +182,85 @@ function App() {
         redirectUri
       )}`;
 
-    window.location.href = authUrl;
+    window.location.href =
+      authUrl;
   };
 
   // =====================================
   // FETCH RULES
   // =====================================
 
-  const fetchValidationRules = async () => {
+  const fetchValidationRules =
+    async () => {
 
-    if (!token || !instanceUrl) {
-
-      showPopup(
-        "Please Login Again ❌",
-        "#ba0517"
-      );
-
-      return;
-    }
-
-    try {
-
-      setLoading(true);
-
-      const response = await axios.post(
-        `${API_BASE_URL}/get-rules`,
-        {
-          accessToken: token,
-          instanceUrl: instanceUrl
-        }
-      );
-
-      if (response.data.success) {
-
-        setRules(response.data.records);
+      if (
+        !token ||
+        !instanceUrl
+      ) {
 
         showPopup(
-          "Rules Loaded ✅",
-          "#2e844a"
-        );
-
-      } else {
-
-        showPopup(
-          "Failed ❌",
+          "Please Login Again ❌",
           "#ba0517"
         );
+
+        return;
       }
 
-    } catch (error) {
+      try {
 
-      console.log(error);
+        setLoading(true);
 
-      showPopup(
-        "Session Expired ❌",
-        "#ba0517"
-      );
-    } finally {
+        const response =
+          await axios.post(
+            `${API_BASE_URL}/get-rules`,
+            {
+              accessToken: token,
+              instanceUrl
+            }
+          );
 
-      setLoading(false);
-    }
-  };
+        console.log(
+          "RULES:",
+          response.data
+        );
+
+        if (
+          response.data.success
+        ) {
+
+          setRules(
+            response.data.records
+          );
+
+          showPopup(
+            "Rules Loaded ✅",
+            "#2e844a"
+          );
+
+        } else {
+
+          showPopup(
+            "Failed ❌",
+            "#ba0517"
+          );
+        }
+
+      } catch (error) {
+
+        console.log(error);
+
+        logout();
+
+        showPopup(
+          "Session Expired ❌",
+          "#ba0517"
+        );
+
+      } finally {
+
+        setLoading(false);
+      }
+    };
 
   // =====================================
   // TOGGLE RULE
@@ -217,40 +271,58 @@ function App() {
     currentState
   ) => {
 
+    const oldRules =
+      [...rules];
+
+    // UPDATE UI
+
+    const updatedRules =
+      rules.map((rule) => {
+
+        if (
+          rule.Id === ruleId
+        ) {
+
+          return {
+            ...rule,
+            Active:
+              !currentState
+          };
+        }
+
+        return rule;
+      });
+
+    setRules(updatedRules);
+
     try {
 
       setLoading(true);
 
-      // UPDATE UI
-
-      const updatedRules =
-        rules.map((rule) => {
-
-          if (rule.Id === ruleId) {
-
-            return {
-              ...rule,
-              Active: !currentState
-            };
-          }
-
-          return rule;
-        });
-
-      setRules(updatedRules);
+      console.log(
+        "TOGGLE REQUEST"
+      );
 
       const response =
         await axios.post(
           `${API_BASE_URL}/toggle-rule`,
           {
             accessToken: token,
-            instanceUrl: instanceUrl,
-            ruleId: ruleId,
-            active: !currentState
+            instanceUrl,
+            ruleId,
+            active:
+              !currentState
           }
         );
 
-      if (response.data.success) {
+      console.log(
+        "TOGGLE RESPONSE:",
+        response.data
+      );
+
+      if (
+        response.data.success
+      ) {
 
         showPopup(
           "Updated ✅",
@@ -258,6 +330,8 @@ function App() {
         );
 
       } else {
+
+        setRules(oldRules);
 
         showPopup(
           "Update Failed ❌",
@@ -267,10 +341,15 @@ function App() {
 
     } catch (error) {
 
-      console.log(error);
+      console.log(
+        "TOGGLE ERROR:",
+        error
+      );
+
+      setRules(oldRules);
 
       showPopup(
-        "Error ❌",
+        "Error Updating Rule ❌",
         "#ba0517"
       );
 
@@ -295,7 +374,9 @@ function App() {
     );
 
     setToken("");
+
     setInstanceUrl("");
+
     setRules([]);
 
     window.location.reload();
@@ -311,7 +392,8 @@ function App() {
       style={{
         padding: "40px",
         fontFamily: "Arial",
-        backgroundColor: "#f4f6f9",
+        backgroundColor:
+          "#f4f6f9",
         minHeight: "100vh"
       }}
     >
@@ -323,12 +405,17 @@ function App() {
       {!token ? (
 
         <button
-          onClick={loginToSalesforce}
+          onClick={
+            loginToSalesforce
+          }
           style={{
-            padding: "12px 20px",
+            padding:
+              "12px 20px",
             border: "none",
-            borderRadius: "6px",
-            backgroundColor: "#0176d3",
+            borderRadius:
+              "6px",
+            backgroundColor:
+              "#0176d3",
             color: "white",
             cursor: "pointer",
             fontSize: "16px"
@@ -353,14 +440,20 @@ function App() {
           <br />
 
           <button
-            onClick={fetchValidationRules}
+            onClick={
+              fetchValidationRules
+            }
             disabled={loading}
             style={{
-              padding: "10px 20px",
-              marginRight: "10px",
+              padding:
+                "10px 20px",
+              marginRight:
+                "10px",
               border: "none",
-              borderRadius: "6px",
-              backgroundColor: "#2e844a",
+              borderRadius:
+                "6px",
+              backgroundColor:
+                "#2e844a",
               color: "white",
               cursor: "pointer"
             }}
@@ -371,10 +464,13 @@ function App() {
           <button
             onClick={logout}
             style={{
-              padding: "10px 20px",
+              padding:
+                "10px 20px",
               border: "none",
-              borderRadius: "6px",
-              backgroundColor: "#ba0517",
+              borderRadius:
+                "6px",
+              backgroundColor:
+                "#ba0517",
               color: "white",
               cursor: "pointer"
             }}
@@ -386,7 +482,9 @@ function App() {
           <br />
 
           {loading && (
-            <p>Loading...</p>
+            <p>
+              Loading...
+            </p>
           )}
 
           {rules.length > 0 && (
@@ -397,65 +495,78 @@ function App() {
                 Validation Rules
               </h2>
 
-              {rules.map((rule) => (
+              {rules.map(
+                (rule) => (
 
-                <div
-                  key={rule.Id}
-                  style={{
-                    background: "white",
-                    padding: "20px",
-                    marginBottom: "15px",
-                    borderRadius: "10px",
-                    boxShadow:
-                      "0 2px 5px rgba(0,0,0,0.1)"
-                  }}
-                >
-
-                  <h3>
-                    {rule.ValidationName}
-                  </h3>
-
-                  <p>
-                    Status:
-                    {rule.Active
-                      ? " Active ✅"
-                      : " Inactive ❌"}
-                  </p>
-
-                  <button
-                    onClick={() =>
-                      toggleRule(
-                        rule.Id,
-                        rule.Active
-                      )
-                    }
+                  <div
+                    key={rule.Id}
                     style={{
-                      padding: "10px 18px",
-                      border: "none",
-                      borderRadius: "6px",
-                      backgroundColor:
-                        rule.Active
-                          ? "#ba0517"
-                          : "#2e844a",
-                      color: "white",
-                      cursor: "pointer"
+                      background:
+                        "white",
+                      padding:
+                        "20px",
+                      marginBottom:
+                        "15px",
+                      borderRadius:
+                        "10px",
+                      boxShadow:
+                        "0 2px 5px rgba(0,0,0,0.1)"
                     }}
                   >
-                    {rule.Active
-                      ? "Disable"
-                      : "Enable"}
-                  </button>
 
-                </div>
+                    <h3>
+                      {
+                        rule.ValidationName
+                      }
+                    </h3>
 
-              ))}
+                    <p>
+                      Status:
+                      {rule.Active
+                        ? " Active ✅"
+                        : " Inactive ❌"}
+                    </p>
+
+                    <button
+                      disabled={
+                        loading
+                      }
+                      onClick={() =>
+                        toggleRule(
+                          rule.Id,
+                          rule.Active
+                        )
+                      }
+                      style={{
+                        padding:
+                          "10px 18px",
+                        border:
+                          "none",
+                        borderRadius:
+                          "6px",
+                        backgroundColor:
+                          rule.Active
+                            ? "#ba0517"
+                            : "#2e844a",
+                        color:
+                          "white",
+                        cursor:
+                          "pointer"
+                      }}
+                    >
+                      {rule.Active
+                        ? "Disable"
+                        : "Enable"}
+                    </button>
+
+                  </div>
+                )
+              )}
 
             </div>
-
           )}
 
         </div>
-
       )}
 
     </div>
