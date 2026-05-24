@@ -9,6 +9,7 @@ const app = express();
 // =====================================
 
 app.use(cors());
+
 app.use(express.json());
 
 // =====================================
@@ -22,7 +23,7 @@ app.get("/", (req, res) => {
 });
 
 // =====================================
-// FETCH VALIDATION RULES
+// GET VALIDATION RULES
 // =====================================
 
 app.post("/get-rules", async (req, res) => {
@@ -34,22 +35,26 @@ app.post("/get-rules", async (req, res) => {
       instanceUrl
     } = req.body;
 
-    // SALESFORCE CONNECTION
+    if (!accessToken || !instanceUrl) {
 
-    const conn = new jsforce.Connection({
-      instanceUrl: instanceUrl,
-      accessToken: accessToken
-    });
+      return res.status(400).json({
+        success: false,
+        message: "Missing Token"
+      });
+    }
 
-    // TOOLING API QUERY
+    const conn =
+      new jsforce.Connection({
+        instanceUrl,
+        accessToken
+      });
 
     const result =
       await conn.tooling.query(`
         SELECT
           Id,
           ValidationName,
-          Active,
-          EntityDefinitionId
+          Active
         FROM ValidationRule
       `);
 
@@ -62,7 +67,7 @@ app.post("/get-rules", async (req, res) => {
 
     console.log(
       "GET RULES ERROR:",
-      error
+      error.message
     );
 
     res.status(500).json({
@@ -87,116 +92,43 @@ app.post("/toggle-rule", async (req, res) => {
       active
     } = req.body;
 
-    // =====================================
-    // SALESFORCE CONNECTION
-    // =====================================
+    const conn =
+      new jsforce.Connection({
+        instanceUrl,
+        accessToken
+      });
 
-    const conn = new jsforce.Connection({
-      instanceUrl: instanceUrl,
-      accessToken: accessToken
-    });
-
-    // =====================================
-    // GET VALIDATION RULE
-    // =====================================
-
-    const ruleResult =
-      await conn.tooling
-        .sobject("ValidationRule")
-        .retrieve(ruleId);
-
-    console.log(
-      "RULE RESULT:",
-      ruleResult
-    );
-
-    // =====================================
-    // BUILD FULL NAME
-    // =====================================
-
-    const fullName =
-      `${ruleResult.EntityDefinitionId}.${ruleResult.ValidationName}`;
-
-    console.log(
-      "FULL NAME:",
-      fullName
-    );
-
-    // =====================================
-    // READ METADATA
-    // =====================================
-
-    const metadataRead =
-      await conn.metadata.read(
-        "ValidationRule",
-        fullName
-      );
-
-    console.log(
-      "METADATA READ:",
-      metadataRead
-    );
-
-    // =====================================
-    // UPDATE ACTIVE STATUS
-    // =====================================
-
-    metadataRead.active = active;
-
-    // =====================================
-    // UPDATE METADATA
-    // =====================================
-
-    const updateResult =
-      await conn.metadata.update(
-        "ValidationRule",
-        metadataRead
-      );
-
-    console.log(
-      "UPDATE RESULT:",
-      updateResult
-    );
+    await conn.tooling
+      .sobject("ValidationRule")
+      .update({
+        Id: ruleId,
+        Active: active
+      });
 
     res.json({
-      success: true,
-      result: updateResult
+      success: true
     });
 
   } catch (error) {
 
     console.log(
-      "========== TOGGLE ERROR =========="
-    );
-
-    console.log(error);
-
-    console.log(
-      "MESSAGE:",
+      "TOGGLE ERROR:",
       error.message
     );
 
-    if (error.data) {
-
-      console.log(
-        "DATA:",
-        error.data
-      );
-    }
-
     res.status(500).json({
       success: false,
-      message: error.message,
-      data: error.data || null
+      message: error.message
     });
   }
 });
 
 // =====================================
-// SERVER
+// PORT
 // =====================================
 
-const PORT = 5000;
+const PORT =
+  process.env.PORT || 5000;
 
 app.listen(PORT, () => {
 
