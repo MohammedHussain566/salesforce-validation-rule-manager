@@ -40,10 +40,11 @@ app.post("/get-rules", async (req, res) => {
     const conn =
       new jsforce.Connection({
         instanceUrl,
-        accessToken
+        accessToken,
+        version: "59.0"
       });
 
-    // FETCH RULES
+    // FETCH VALIDATION RULES
 
     const result =
       await conn.tooling.query(`
@@ -63,9 +64,10 @@ app.post("/get-rules", async (req, res) => {
   } catch (error) {
 
     console.log(
-      "GET RULES ERROR:",
-      error
+      "GET RULES ERROR:"
     );
+
+    console.log(error);
 
     res.status(500).json({
       success: false,
@@ -94,7 +96,8 @@ app.post("/toggle-rule", async (req, res) => {
     const conn =
       new jsforce.Connection({
         instanceUrl,
-        accessToken
+        accessToken,
+        version: "59.0"
       });
 
     // =====================================
@@ -112,7 +115,7 @@ app.post("/toggle-rule", async (req, res) => {
     );
 
     // =====================================
-    // GET OBJECT DETAILS
+    // GET ENTITY DETAILS
     // =====================================
 
     const entity =
@@ -155,7 +158,7 @@ app.post("/toggle-rule", async (req, res) => {
     );
 
     // =====================================
-    // UPDATED METADATA
+    // CREATE UPDATED METADATA
     // =====================================
 
     const updatedMetadata = {
@@ -197,10 +200,6 @@ app.post("/toggle-rule", async (req, res) => {
       updateResult
     );
 
-    // =====================================
-    // SUCCESS
-    // =====================================
-
     res.json({
       success: true,
       result: updateResult
@@ -216,8 +215,7 @@ app.post("/toggle-rule", async (req, res) => {
 
     res.status(500).json({
       success: false,
-      message: error.message,
-      details: error
+      message: error.message
     });
   }
 });
